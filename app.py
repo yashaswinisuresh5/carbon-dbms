@@ -77,11 +77,6 @@ def init_db():
             ('Flight (Domestic)', 'Transport', 'km', 0.2550, 'Short haul flight'),
             ('Grid Electricity', 'Electricity', 'kWh', 0.8500, 'Average grid electricity'),
             ('Solar Electricity', 'Electricity', 'kWh', 0.0410, 'Rooftop solar lifecycle emissions'),
-            ('Beef Meal', 'Food', 'kg', 27.000, 'Beef consumption'),
-            ('Chicken Meal', 'Food', 'kg', 6.9000, 'Chicken consumption'),
-            ('Vegetarian Meal', 'Food', 'kg', 2.0000, 'Average vegetarian diet'),
-            ('Cotton T-Shirt', 'Shopping', 'item', 4.3000, 'New cotton shirt production'),
-            ('Smartphone', 'Shopping', 'item', 55.000, 'New smartphone lifecycle'),
             ('General Waste to Landfill', 'Waste', 'kg', 0.4500, 'Mixed municipal waste'),
             
             # ADVANCED: Carbon Offsets (Negative Emissions)
