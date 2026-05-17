@@ -1,0 +1,812 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EcoTrack - Advanced Carbon Footprint Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary-green: #2ecc71;
+            --dark-green: #27ae60;
+            --light-green: #e8f8f5;
+            --text-dark: #2c3e50;
+            --bg-light: #f4f7f6;
+            --danger-red: #e74c3c;
+            --warning-yellow: #f1c40f;
+            --info-blue: #3498db;
+        }
+        body {
+            background-color: var(--bg-light);
+            font-family: 'Inter', 'Segoe UI', sans-serif;
+            min-height: 100vh;
+        }
+        
+        /* Glassmorphism & Shadows */
+        .glass-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+            border: 1px solid rgba(255,255,255,0.4);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .glass-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 35px rgba(0,0,0,0.08);
+        }
+
+        /* Sidebar Navigation */
+        .sidebar {
+            background: linear-gradient(160deg, #1e8449 0%, #27ae60 100%);
+            min-height: 100vh;
+            color: white;
+            padding-top: 30px;
+            box-shadow: 5px 0 25px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 0;
+        }
+        .sidebar .nav-link {
+            color: rgba(255,255,255,0.85);
+            padding: 16px 30px;
+            border-radius: 0 30px 30px 0;
+            margin-bottom: 8px;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            font-weight: 600;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+        .sidebar .nav-link:hover, .sidebar .nav-link.active {
+            color: var(--primary-green);
+            background-color: white;
+            box-shadow: -5px 5px 20px rgba(0,0,0,0.15);
+        }
+        .sidebar .nav-link i { margin-right: 15px; width: 20px; text-align: center; }
+        .sidebar-brand {
+            font-size: 2rem;
+            font-weight: 900;
+            padding: 0 30px 40px;
+            display: block;
+            color: white;
+            text-decoration: none;
+            letter-spacing: -0.5px;
+        }
+        
+        /* Main Content Styles */
+        .main-content { padding: 40px; }
+        .top-bar {
+            background: white;
+            padding: 18px 35px;
+            border-radius: 20px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.04);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 40px;
+        }
+        
+        /* Stat Cards */
+        .stat-icon {
+            width: 65px; height: 65px;
+            border-radius: 18px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.8rem;
+            margin-right: 20px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        .content-section {
+            display: none;
+            animation: fadeIn 0.5s ease-in-out;
+        }
+        .content-section.active { display: block; }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Progress Bars */
+        .progress { height: 12px; border-radius: 10px; background-color: #ecf0f1; margin-top: 10px; }
+        .progress-bar { border-radius: 10px; font-weight: bold; }
+        
+        /* Badges */
+        .badge-eco { background: linear-gradient(45deg, #f1c40f, #f39c12); color: white; padding: 8px 15px; border-radius: 20px; font-weight: 700; box-shadow: 0 4px 10px rgba(241, 196, 15, 0.3);}
+        .badge-user { background-color: var(--light-green); color: var(--dark-green); padding: 8px 15px; border-radius: 20px; font-weight: 600;}
+        
+        /* Buttons & Forms */
+        .btn-success { background: linear-gradient(45deg, var(--primary-green), var(--dark-green)); border: none; font-weight: 600; padding: 12px 25px; border-radius: 12px; transition: transform 0.2s;}
+        .btn-success:hover { transform: scale(1.02); box-shadow: 0 8px 20px rgba(46, 204, 113, 0.4); }
+        .form-control, .form-select { border-radius: 12px; padding: 14px; border: 2px solid #eee; background-color: #fafafa; }
+        .form-control:focus, .form-select:focus {
+            box-shadow: none;
+            border-color: var(--primary-green);
+            background-color: white;
+        }
+        
+        /* Tables */
+        .table { border-collapse: separate; border-spacing: 0 10px; }
+        .table thead th { border: none; color: #7f8c8d; font-weight: 600; text-transform: uppercase; font-size: 0.85rem; letter-spacing: 0.5px; }
+        .table tbody tr { background: white; box-shadow: 0 2px 10px rgba(0,0,0,0.02); border-radius: 10px; transition: transform 0.2s; }
+        .table tbody tr:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0,0,0,0.05); }
+        .table td { border: none; padding: 15px; vertical-align: middle; }
+        .table td:first-child { border-radius: 10px 0 0 10px; }
+        .table td:last-child { border-radius: 0 10px 10px 0; }
+        
+        /* Suggestion Card */
+        .suggestion-card {
+            background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+            border-left: 5px solid var(--warning-yellow);
+            padding: 20px;
+            border-radius: 15px;
+            margin-top: 20px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+        }
+
+        /* Toast Container */
+        .toast-container { position: fixed; top: 20px; right: 20px; z-index: 1055; }
+
+        @media (max-width: 768px) {
+            .sidebar { min-height: auto; padding-bottom: 20px; position: relative;}
+            .sidebar .nav-link { border-radius: 10px; margin: 0 15px 5px; }
+            .main-content { padding: 20px; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- Toast Notifications -->
+<div class="toast-container" id="toastContainer"></div>
+
+<div class="container-fluid p-0">
+    <div class="row g-0">
+        <!-- Sidebar Navigation -->
+        <div class="col-md-3 col-lg-2 sidebar">
+            <a href="#" class="sidebar-brand"><i class="fas fa-leaf me-2"></i>EcoTrack</a>
+            <nav class="nav flex-column">
+                <a class="nav-link active" onclick="switchTab('dashboard')" id="nav-dashboard">
+                    <i class="fas fa-chart-pie"></i> Dashboard
+                </a>
+                <a class="nav-link" onclick="switchTab('log-activity')" id="nav-log-activity">
+                    <i class="fas fa-plus-circle"></i> Log Activity
+                </a>
+                <a class="nav-link" onclick="switchTab('history')" id="nav-history">
+                    <i class="fas fa-history"></i> History
+                </a>
+                <a class="nav-link" onclick="switchTab('goals')" id="nav-goals">
+                    <i class="fas fa-bullseye"></i> Set Goals
+                </a>
+                <a class="nav-link" onclick="switchTab('leaderboard')" id="nav-leaderboard">
+                    <i class="fas fa-trophy"></i> Leaderboard
+                </a>
+                <a class="nav-link text-white mt-5" onclick="logout()">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </a>
+            </nav>
+        </div>
+
+        <!-- Main Content -->
+        <div class="col-md-9 col-lg-10 main-content">
+            
+            <div class="top-bar">
+                <h3 class="m-0 fw-bold text-dark" id="page-title">Dashboard Overview</h3>
+                <div class="d-flex align-items-center">
+                    <div id="userBadge" class="badge-eco me-3 d-none"><i class="fas fa-medal me-1"></i> Eco Warrior</div>
+                    <div class="badge-user"><i class="fas fa-user-circle me-2"></i><span id="userNameDisplay">User</span></div>
+                </div>
+            </div>
+
+            <!-- Dashboard Section -->
+            <div id="sec-dashboard" class="content-section active">
+                
+                <!-- Advanced Net-Zero Row -->
+                <div class="row mb-4">
+                    <div class="col-md-4 mb-3">
+                        <div class="glass-card p-4 d-flex align-items-center h-100" style="border-left: 4px solid var(--danger-red);">
+                            <div class="stat-icon" style="background: #fdedec; color: #c0392b;">
+                                <i class="fas fa-industry"></i>
+                            </div>
+                            <div>
+                                <h6 class="text-muted mb-1 fw-bold text-uppercase" style="font-size:0.8rem">Gross Emissions</h6>
+                                <h2 class="fw-bold mb-0 text-dark"><span id="dashGrossCarbon">0</span> <small class="text-muted fs-6">kg</small></h2>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <div class="glass-card p-4 d-flex align-items-center h-100" style="border-left: 4px solid var(--primary-green);">
+                            <div class="stat-icon" style="background: #e8f8f5; color: #117a65;">
+                                <i class="fas fa-seedling"></i>
+                            </div>
+                            <div>
+                                <h6 class="text-muted mb-1 fw-bold text-uppercase" style="font-size:0.8rem">Total Offsets</h6>
+                                <h2 class="fw-bold mb-0 text-success">-<span id="dashTotalOffsets">0</span> <small class="text-muted fs-6">kg</small></h2>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <div class="glass-card p-4 d-flex align-items-center h-100" style="border-left: 4px solid var(--info-blue);">
+                            <div class="stat-icon" style="background: #ebf5fb; color: #2874a6;">
+                                <i class="fas fa-globe"></i>
+                            </div>
+                            <div>
+                                <h6 class="text-muted mb-1 fw-bold text-uppercase" style="font-size:0.8rem">Net Footprint</h6>
+                                <h2 class="fw-bold mb-0 text-dark"><span id="dashNetCarbon">0</span> <small class="text-muted fs-6">kg</small></h2>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Goal & Benchmark Row -->
+                <div class="row mb-4">
+                    <div class="col-md-6 mb-3">
+                        <div class="glass-card p-4 d-flex align-items-center h-100">
+                            <div class="stat-icon" style="background: linear-gradient(135deg, #ebf5fb, #aed6f1); color: #2874a6;">
+                                <i class="fas fa-bullseye"></i>
+                            </div>
+                            <div class="w-100">
+                                <div class="d-flex justify-content-between">
+                                    <h6 class="text-muted mb-1 fw-bold text-uppercase" style="font-size:0.8rem">Monthly Budget</h6>
+                                    <span id="goalPercentText" class="fw-bold text-success small">0%</span>
+                                </div>
+                                <h4 class="fw-bold mb-2 text-dark"><span id="dashGoal">500</span> <small class="text-muted fs-6">kg limit</small></h4>
+                                <div class="progress">
+                                    <div id="goalProgressBar" class="progress-bar bg-success" role="progressbar" style="width: 0%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+                        <div class="glass-card p-4 d-flex align-items-center h-100">
+                            <div class="stat-icon" style="background: linear-gradient(135deg, #fef9e7, #f9e79f); color: #b7950b;">
+                                <i class="fas fa-globe-americas"></i>
+                            </div>
+                            <div class="w-100">
+                                <h6 class="text-muted mb-1 fw-bold text-uppercase" style="font-size:0.8rem">Vs Global Average</h6>
+                                <h4 class="fw-bold mb-2 text-dark" id="dashVsGlobalText">Loading...</h4>
+                                <div class="progress" style="height: 8px;">
+                                    <div class="progress-bar bg-warning" role="progressbar" style="width: 100%" title="Global Average (400kg)"></div>
+                                </div>
+                                <div class="progress mt-1" style="height: 8px;">
+                                    <div id="myAvgBar" class="progress-bar bg-primary" role="progressbar" style="width: 0%" title="Your Emissions"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Charts Row -->
+                <div class="row justify-content-center">
+                    <div class="col-lg-6 mb-4">
+                        <div class="glass-card p-4 h-100 text-center">
+                            <h5 class="fw-bold mb-4">Carbon Category Breakdown</h5>
+                            <div style="max-height: 350px; display: flex; justify-content: center;">
+                                <canvas id="categoryChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+            </div>
+
+            <!-- Log Activity Section -->
+            <div id="sec-log-activity" class="content-section">
+                <div class="row justify-content-center">
+                    <div class="col-lg-8">
+                        <div class="glass-card p-5">
+                            <h4 class="fw-bold mb-4"><i class="fas fa-calculator text-success me-2"></i> Log New Activity</h4>
+                            <form id="logActivityForm">
+                                <div class="mb-4">
+                                    <label class="form-label fw-bold text-muted">1. Select Category</label>
+                                    <select class="form-select form-select-lg" id="categorySelect" required onchange="populateActivities()">
+                                        <option value="" disabled selected>Choose a category...</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="mb-4">
+                                    <label class="form-label fw-bold text-muted">2. Specific Activity</label>
+                                    <select class="form-select form-select-lg" id="activitySelect" required onchange="updateUnitLabel()">
+                                        <option value="" disabled selected>Select category first...</option>
+                                    </select>
+                                    <small class="text-muted mt-2 d-block" id="activityDesc"><i class="fas fa-info-circle me-1"></i> Select an activity to see details</small>
+                                </div>
+
+                                <div class="row mb-4">
+                                    <div class="col-md-6">
+                                        <label class="form-label fw-bold text-muted">3. Quantity / Amount</label>
+                                        <div class="input-group input-group-lg">
+                                            <input type="number" step="0.01" class="form-control" id="activityQuantity" required placeholder="0.00">
+                                            <span class="input-group-text bg-light fw-bold" id="unitLabel">Unit</span>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label fw-bold text-muted">4. Notes (Optional)</label>
+                                        <input type="text" class="form-control form-control-lg" id="activityNotes" placeholder="e.g. Commute to office">
+                                    </div>
+                                </div>
+                                
+                                <button type="submit" class="btn btn-success btn-lg w-100 mt-2" id="btnLogActivity">
+                                    Log Activity & Calculate Impact <i class="fas fa-arrow-right ms-2"></i>
+                                </button>
+                            </form>
+                            
+                            <!-- Result Display -->
+                            <div id="logResultContainer" class="mt-4 p-4 rounded-4" style="display: none; background: #f8fdfa; border: 2px dashed var(--primary-green);">
+                                <h5 class="fw-bold text-center mb-3 text-success"><i class="fas fa-check-circle me-2"></i>Activity Logged Successfully!</h5>
+                                <div class="text-center mb-4">
+                                    <p class="text-muted mb-1 text-uppercase fw-bold" style="font-size:0.8rem">Carbon Generated</p>
+                                    <h1 class="fw-bold text-danger mb-0 display-4"><span id="resCarbon">0</span> <span class="fs-4">kg CO₂</span></h1>
+                                    <p class="text-muted mt-2" id="resDetails"></p>
+                                </div>
+                                <div class="suggestion-card">
+                                    <h6 class="fw-bold mb-3"><i class="fas fa-lightbulb text-warning me-2"></i>AI Eco-Suggestions</h6>
+                                    <ul id="resSuggestions" class="text-muted mb-0" style="line-height: 1.8;">
+                                    </ul>
+                                </div>
+                                <button class="btn btn-outline-success mt-4 w-100 fw-bold" onclick="resetLogForm()"><i class="fas fa-redo me-2"></i>Log Another Activity</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- History Section -->
+            <div id="sec-history" class="content-section">
+                <div class="glass-card p-4">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h4 class="fw-bold m-0">Activity History</h4>
+                        <a href="/api/export-csv" class="btn btn-outline-primary fw-bold" target="_blank">
+                            <i class="fas fa-file-csv me-2"></i> Export to CSV
+                        </a>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Category</th>
+                                    <th>Activity Details</th>
+                                    <th>Quantity</th>
+                                    <th>CO₂ Output</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="historyTableBody">
+                                <!-- Populated dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                    <!-- Pagination -->
+                    <nav class="mt-4">
+                        <ul class="pagination justify-content-center" id="historyPagination">
+                        </ul>
+                    </nav>
+                </div>
+            </div>
+
+            <!-- Goals Section -->
+            <div id="sec-goals" class="content-section">
+                <div class="row justify-content-center">
+                    <div class="col-lg-6">
+                        <div class="glass-card p-5 text-center">
+                            <div class="stat-icon mx-auto mb-4" style="background: #fdf2e9; color: #e67e22; width: 80px; height: 80px; font-size: 2.5rem;">
+                                <i class="fas fa-bullseye"></i>
+                            </div>
+                            <h3 class="fw-bold mb-3">Set Monthly Budget</h3>
+                            <p class="text-muted mb-4">Challenge yourself to lower your carbon footprint. Set a maximum kg of CO₂ you want to emit this month.</p>
+                            
+                            <form id="goalForm">
+                                <div class="input-group input-group-lg mb-4 mx-auto" style="max-width: 300px;">
+                                    <input type="number" class="form-control text-center fw-bold" id="newGoalInput" required min="10" step="10">
+                                    <span class="input-group-text bg-light">kg CO₂</span>
+                                </div>
+                                <button type="submit" class="btn btn-success btn-lg px-5 rounded-pill shadow-sm">Save New Target</button>
+                            </form>
+                            
+                            <div class="mt-5 text-start bg-light p-4 rounded-4">
+                                <h6><i class="fas fa-info-circle text-info me-2"></i> Did you know?</h6>
+                                <p class="small text-muted mb-0">The average global carbon footprint is roughly 400kg per person per month. To fight climate change, experts suggest aiming for under 200kg per month.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Leaderboard Section -->
+            <div id="sec-leaderboard" class="content-section">
+                <div class="glass-card p-5">
+                    <div class="text-center mb-5">
+                        <h2 class="fw-bold"><i class="fas fa-trophy text-warning me-2"></i> Global Leaderboard</h2>
+                        <p class="text-muted">Ranked by lowest Net Carbon Footprint (Emissions - Offsets)</p>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle">
+                            <thead class="bg-light">
+                                <tr>
+                                    <th class="text-center" style="width: 10%;">Rank</th>
+                                    <th>Eco Warrior Name</th>
+                                    <th class="text-end">Net Score (kg CO₂)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="leaderboardBody">
+                                <!-- Populated dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<script>
+    // Global Data
+    let activitiesData = {};
+    let chartWeekly = null;
+    let chartCategory = null;
+
+    // Custom Toast Notification
+    function showToast(message, type = 'success') {
+        const bgClass = type === 'success' ? 'bg-success' : 'bg-danger';
+        const icon = type === 'success' ? 'fa-check-circle' : 'fa-exclamation-triangle';
+        const toastHTML = `
+            <div class="toast align-items-center text-white ${bgClass} border-0 mb-3 shadow-lg" role="alert" aria-live="assertive" aria-atomic="true">
+                <div class="d-flex">
+                    <div class="toast-body fw-bold fs-6">
+                        <i class="fas ${icon} me-2"></i> ${message}
+                    </div>
+                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+                </div>
+            </div>
+        `;
+        const container = document.getElementById('toastContainer');
+        container.insertAdjacentHTML('beforeend', toastHTML);
+        const toastEl = container.lastElementChild;
+        const toast = new bootstrap.Toast(toastEl, { delay: 4000 });
+        toast.show();
+        toastEl.addEventListener('hidden.bs.toast', () => toastEl.remove());
+    }
+
+    // Initialize App
+    async function init() {
+        await checkAuth();
+        await fetchActivities();
+        await loadDashboard();
+    }
+
+    async function checkAuth() {
+        const res = await fetch('/api/check-auth');
+        const data = await res.json();
+        if (!data.authenticated) {
+            window.location.href = '/';
+        } else {
+            document.getElementById('userNameDisplay').textContent = data.name;
+        }
+    }
+
+    async function logout() {
+        await fetch('/api/logout', { method: 'POST' });
+        window.location.href = '/';
+    }
+
+    // UI Navigation
+    const pageTitles = {
+        'dashboard': 'Dashboard Overview',
+        'log-activity': 'Calculate Emissions',
+        'history': 'Footprint Database',
+        'goals': 'Advanced Goal Setting',
+        'leaderboard': 'Global Leaderboard'
+    };
+
+    function switchTab(tabId) {
+        document.querySelectorAll('.sidebar .nav-link').forEach(el => el.classList.remove('active'));
+        document.getElementById(`nav-${tabId}`).classList.add('active');
+        
+        document.querySelectorAll('.content-section').forEach(el => el.classList.remove('active'));
+        document.getElementById(`sec-${tabId}`).classList.add('active');
+        
+        document.getElementById('page-title').textContent = pageTitles[tabId];
+
+        if(tabId === 'dashboard') loadDashboard();
+        if(tabId === 'history') loadHistory(1);
+        if(tabId === 'leaderboard') loadLeaderboard();
+    }
+
+    // Fetch Dashboard Data
+    async function loadDashboard() {
+        try {
+            const res = await fetch('/api/dashboard');
+            const data = await res.json();
+            
+            if(data.success) {
+                // Monthly Carbon, Offsets & Goals
+                const monthCarbon = data.month_carbon;
+                const goal = data.goal;
+                
+                document.getElementById('dashGrossCarbon').textContent = data.gross_emissions.toFixed(1);
+                document.getElementById('dashTotalOffsets').textContent = data.total_offsets.toFixed(1);
+                document.getElementById('dashNetCarbon').textContent = data.net_carbon.toFixed(1);
+                
+                document.getElementById('dashGoal').textContent = goal.toFixed(0);
+                document.getElementById('newGoalInput').value = goal.toFixed(0);
+                
+                // Goal Progress Bar Logic
+                let percent = (monthCarbon / goal) * 100;
+                let pbClass = 'bg-success';
+                if(percent > 75) pbClass = 'bg-warning';
+                if(percent > 100) { percent = 100; pbClass = 'bg-danger'; }
+                
+                const pb = document.getElementById('goalProgressBar');
+                pb.style.width = percent + '%';
+                pb.className = `progress-bar ${pbClass}`;
+                document.getElementById('goalPercentText').textContent = Math.round((monthCarbon/goal)*100) + '%';
+                document.getElementById('goalPercentText').className = `fw-bold small text-${pbClass.replace('bg-','')}`;
+
+                // Gamification Badge
+                const badge = document.getElementById('userBadge');
+                if (monthCarbon > 0 && monthCarbon < goal * 0.5) {
+                    badge.classList.remove('d-none');
+                    badge.innerHTML = '<i class="fas fa-leaf me-1"></i> Eco Master';
+                } else if (monthCarbon > 0 && monthCarbon <= goal) {
+                    badge.classList.remove('d-none');
+                    badge.innerHTML = '<i class="fas fa-medal me-1"></i> Eco Warrior';
+                } else {
+                    badge.classList.add('d-none');
+                }
+
+                // Global Average Comparison
+                const myAvgBar = document.getElementById('myAvgBar');
+                let myGlobalPercent = (monthCarbon / data.global_avg) * 100;
+                if(myGlobalPercent > 100) myGlobalPercent = 100;
+                myAvgBar.style.width = myGlobalPercent + '%';
+                
+                const vsGlobalText = document.getElementById('dashVsGlobalText');
+                if(monthCarbon < data.global_avg) {
+                    vsGlobalText.innerHTML = `<span class="text-success"><i class="fas fa-arrow-down"></i> ${Math.round(100 - (monthCarbon/data.global_avg)*100)}%</span> <span class="fs-6 fw-normal">Lower</span>`;
+                    myAvgBar.className = 'progress-bar bg-success';
+                } else {
+                    vsGlobalText.innerHTML = `<span class="text-danger"><i class="fas fa-arrow-up"></i> ${Math.round((monthCarbon/data.global_avg)*100 - 100)}%</span> <span class="fs-6 fw-normal">Higher</span>`;
+                    myAvgBar.className = 'progress-bar bg-danger';
+                }
+
+                // Render Charts
+                renderCharts(data.recent, data.categories);
+            }
+        } catch(e) { console.error("Error loading dashboard", e); }
+    }
+
+    // Chart Setup with Gradients
+    function renderCharts(recentData, categoryData) {
+        Chart.defaults.font.family = "'Inter', sans-serif";
+
+        // Category Breakdown Chart
+        const ctxCategory = document.getElementById('categoryChart').getContext('2d');
+        if(chartCategory) chartCategory.destroy();
+
+        const labelsC = categoryData.map(d => d.category);
+        const dataC = categoryData.map(d => d.category_total);
+        const colors = ['#2ecc71', '#3498db', '#f1c40f', '#e74c3c', '#9b59b6'];
+
+        chartCategory = new Chart(ctxCategory, {
+            type: 'doughnut',
+            data: {
+                labels: labelsC,
+                datasets: [{
+                    data: dataC,
+                    backgroundColor: colors,
+                    borderWidth: 3,
+                    borderColor: '#fff',
+                    hoverOffset: 10
+                }]
+            },
+            options: { 
+                responsive: true, 
+                maintainAspectRatio: false,
+                cutout: '75%',
+                plugins: {
+                    legend: { position: 'bottom', labels: { padding: 20, usePointStyle: true } }
+                }
+            }
+        });
+    }
+
+    // Set Goal form
+    document.getElementById('goalForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const goal = document.getElementById('newGoalInput').value;
+        try {
+            const res = await fetch('/api/set-goal', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({goal: parseFloat(goal)})
+            });
+            const data = await res.json();
+            if(data.success) {
+                showToast("Monthly budget goal updated successfully!", "success");
+                loadDashboard();
+            }
+        } catch(e) { console.error(e); showToast("Error saving goal", "error"); }
+    });
+
+    // Add Activity Logic
+    async function fetchActivities() {
+        const res = await fetch('/api/activities');
+        const data = await res.json();
+        if(data.success) {
+            activitiesData = data.activities;
+            const catSelect = document.getElementById('categorySelect');
+            catSelect.innerHTML = '<option value="" disabled selected>Choose a category...</option>';
+            Object.keys(activitiesData).forEach(cat => {
+                catSelect.innerHTML += `<option value="${cat}">${cat}</option>`;
+            });
+        }
+    }
+
+    function populateActivities() {
+        const cat = document.getElementById('categorySelect').value;
+        const actSelect = document.getElementById('activitySelect');
+        actSelect.innerHTML = '<option value="" disabled selected>Choose an activity...</option>';
+        
+        if(activitiesData[cat]) {
+            activitiesData[cat].forEach(act => {
+                actSelect.innerHTML += `<option value="${act.id}" data-unit="${act.unit}" data-desc="${act.description || ''}">${act.name}</option>`;
+            });
+        }
+        document.getElementById('unitLabel').textContent = 'Unit';
+        document.getElementById('activityDesc').innerHTML = '<i class="fas fa-info-circle me-1"></i> Select an activity to see details';
+    }
+
+    function updateUnitLabel() {
+        const actSelect = document.getElementById('activitySelect');
+        const selectedOpt = actSelect.options[actSelect.selectedIndex];
+        document.getElementById('unitLabel').textContent = selectedOpt.getAttribute('data-unit');
+        document.getElementById('activityDesc').innerHTML = `<i class="fas fa-info-circle text-info me-1"></i> ${selectedOpt.getAttribute('data-desc')}`;
+    }
+
+    document.getElementById('logActivityForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const activity_id = document.getElementById('activitySelect').value;
+        const quantity = document.getElementById('activityQuantity').value;
+        const notes = document.getElementById('activityNotes').value;
+
+        try {
+            const res = await fetch('/api/log-activity', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({activity_id, quantity, notes})
+            });
+            const data = await res.json();
+            
+            if(data.success) {
+                showToast("Activity successfully added to database!", "success");
+                // Show Result
+                document.getElementById('logActivityForm').style.display = 'none';
+                document.getElementById('logResultContainer').style.display = 'block';
+                
+                // Animate numbers
+                document.getElementById('resCarbon').textContent = Math.abs(data.carbon_output).toFixed(2);
+                if (data.carbon_output < 0) {
+                    document.getElementById('resCarbon').parentElement.className = "fw-bold text-success mb-0 display-4";
+                    document.getElementById('resDetails').innerHTML = `Calculated offset from <b>${data.quantity} ${data.unit}</b> of <b>${data.activity_name}</b>`;
+                } else {
+                    document.getElementById('resCarbon').parentElement.className = "fw-bold text-danger mb-0 display-4";
+                    document.getElementById('resDetails').innerHTML = `Calculated emission from <b>${data.quantity} ${data.unit}</b> of <b>${data.activity_name}</b>`;
+                }
+                
+                const suggUl = document.getElementById('resSuggestions');
+                suggUl.innerHTML = '';
+                data.suggestions.forEach(s => {
+                    suggUl.innerHTML += `<li>${s}</li>`;
+                });
+                
+                loadDashboard();
+            } else {
+                showToast(data.message, "error");
+            }
+        } catch(e) { console.error("Error logging", e); showToast("Server error", "error"); }
+    });
+
+    function resetLogForm() {
+        document.getElementById('logActivityForm').reset();
+        document.getElementById('logActivityForm').style.display = 'block';
+        document.getElementById('logResultContainer').style.display = 'none';
+        document.getElementById('unitLabel').textContent = 'Unit';
+        document.getElementById('activityDesc').innerHTML = '<i class="fas fa-info-circle me-1"></i> Select an activity to see details';
+        document.getElementById('activitySelect').innerHTML = '<option value="" disabled selected>Select category first...</option>';
+    }
+
+    // History Logic
+    async function loadHistory(page=1) {
+        try {
+            const res = await fetch(`/api/history?page=${page}`);
+            const data = await res.json();
+            
+            if(data.success) {
+                const tbody = document.getElementById('historyTableBody');
+                tbody.innerHTML = '';
+                
+                if(data.records.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="6" class="text-center py-5 text-muted"><i class="fas fa-folder-open fs-1 mb-3 d-block"></i>No history found. Start logging activities!</td></tr>';
+                } else {
+                    data.records.forEach(r => {
+                        tbody.innerHTML += `
+                            <tr>
+                                <td class="text-muted fw-semibold">${new Date(r.date).toLocaleDateString()}</td>
+                                <td><span class="badge bg-light text-dark border p-2">${r.category}</span></td>
+                                <td>
+                                    <div class="fw-bold text-dark">${r.activity_name}</div>
+                                    <small class="text-muted"><i class="fas fa-comment-alt me-1 opacity-50"></i>${r.notes||'No notes'}</small>
+                                </td>
+                                <td class="fw-medium">${r.quantity} ${r.unit}</td>
+                                <td class="${r.carbon_output < 0 ? 'text-success' : 'text-danger'} fw-bold fs-6">${r.carbon_output.toFixed(2)} <span class="fs-7 text-muted fw-normal">kg</span></td>
+                                <td>
+                                    <button class="btn btn-sm btn-light text-danger rounded-circle shadow-sm" onclick="deleteRecord(${r.id})" title="Delete Record" style="width:35px;height:35px;">
+                                        <i class="fas fa-trash-alt"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                        `;
+                    });
+                }
+
+                // Render Pagination
+                const ul = document.getElementById('historyPagination');
+                ul.innerHTML = '';
+                if(data.pages > 1) {
+                    for(let i=1; i<=data.pages; i++) {
+                        ul.innerHTML += `<li class="page-item ${i===data.page ? 'active':''}"><a class="page-link cursor-pointer shadow-sm" onclick="loadHistory(${i})">${i}</a></li>`;
+                    }
+                }
+            }
+        } catch(e) { console.error("Error history", e); }
+    }
+
+    async function deleteRecord(id) {
+        if(confirm("Are you sure you want to delete this activity log? This cannot be undone.")) {
+            const res = await fetch(`/api/delete-activity/${id}`, {method: 'DELETE'});
+            const data = await res.json();
+            if(data.success) {
+                showToast("Record deleted successfully", "success");
+                loadHistory(); 
+                loadDashboard(); 
+            }
+        }
+    }
+
+    // Leaderboard Logic
+    async function loadLeaderboard() {
+        try {
+            const res = await fetch('/api/leaderboard');
+            const data = await res.json();
+            if(data.success) {
+                const tbody = document.getElementById('leaderboardBody');
+                tbody.innerHTML = '';
+                data.leaders.forEach((l, index) => {
+                    let rankHTML = `<span class="fw-bold text-muted">#${index+1}</span>`;
+                    if(index === 0) rankHTML = `<i class="fas fa-medal fs-3" style="color: #f1c40f;"></i>`;
+                    if(index === 1) rankHTML = `<i class="fas fa-medal fs-4" style="color: #bdc3c7;"></i>`;
+                    if(index === 2) rankHTML = `<i class="fas fa-medal fs-5" style="color: #cd7f32;"></i>`;
+                    
+                    const isCurrentUser = document.getElementById('userNameDisplay').textContent === l.name;
+                    
+                    tbody.innerHTML += `
+                        <tr class="${isCurrentUser ? 'table-success' : ''}">
+                            <td class="text-center">${rankHTML}</td>
+                            <td class="fw-bold ${isCurrentUser ? 'text-success' : 'text-dark'}">${l.name} ${isCurrentUser ? '(You)' : ''}</td>
+                            <td class="text-end fw-bold ${l.net_score < 0 ? 'text-success' : 'text-primary'}">${l.net_score.toFixed(1)}</td>
+                        </tr>
+                    `;
+                });
+            }
+        } catch(e) { console.error(e); }
+    }
+
+    // Start App
+    window.onload = init;
+</script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
