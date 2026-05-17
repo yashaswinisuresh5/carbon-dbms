@@ -30,7 +30,7 @@ pip install flask bcrypt
 ### 3. Launch the Application
 Run the backend server:
 ```bash
-python dbms1.py
+python app.py
 ```
 *Note: The database (`carbon_footprint.db`) is generated and populated automatically the first time you run this script!*
 
